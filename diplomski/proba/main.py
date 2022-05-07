@@ -13,12 +13,12 @@ mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 
 # Load the gesture recognizer model
-model = load_model('mp_hand_gesture')
+model = load_model('my_hand_gesture')
 
 print(model.summary())
 
 # Load class names
-f = open('gesture.names', 'r')
+f = open('my_gesture.names', 'r')
 classNames = f.read().split('\n')
 f.close()
 print(classNames)
