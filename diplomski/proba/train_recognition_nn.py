@@ -2,8 +2,11 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 import random
+import pickle
 from tensorflow.keras.models import load_model, Sequential
 from tensorflow.keras.layers import Dense
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report, f1_score
 
 source_model = load_model('mp_hand_gesture')
 model = Sequential()
@@ -42,7 +45,7 @@ def drop_columns(dataframe, columns):
 
 df = pd.read_csv("./data/german_sign_language.csv")
 
-df = df[df["label"] < "f"]
+df = df[df["label"] < "g"]
 col_idx = 2
 while col_idx <= 62:
     df = df.drop("coordinate {}".format(col_idx), axis=1)
@@ -56,6 +59,20 @@ x_df = df.drop("label", axis=1)
 
 x_train, y_train, x_val, y_val = train_test_split(x_df.to_numpy(), y_df.to_numpy())
 
+print(x_train)
+# model.fit(x_train, y_train, batch_size=32, validation_data = (x_val, y_val), epochs=200, verbose=1)
+# model.save("./my_hand_gesture")
 
-model.fit(x_train, y_train, batch_size=32, validation_data = (x_val, y_val), epochs=200, verbose=1)
-model.save("./my_hand_gesture")
+print(y_train)
+y_1d = tf.argmax(y_train, axis=1).numpy()
+print(y_1d)
+
+clf = SVC(kernel="rbf")
+clf.fit(x_train, y_1d)
+predictions = clf.predict(x_val)
+
+print(classification_report(tf.argmax(y_val, axis=1).numpy(), predictions))
+print(f1_score(tf.argmax(y_val, axis=1).numpy(), predictions, average="micro"))
+
+with open("svm.pickle", "wb") as file:
+    pickle.dump(clf, file)

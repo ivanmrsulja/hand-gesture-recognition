@@ -1,11 +1,15 @@
+from copyreg import pickle
 import mediapipe as mp
 import cv2
 import numpy as np
 import uuid
 import os
+import pickle
 
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+
+predict_using = "SVM"
 
 cap = cv2.VideoCapture(0)
 
@@ -13,9 +17,10 @@ mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 
 # Load the gesture recognizer model
-model = load_model('my_hand_gesture')
-
-print(model.summary())
+# model = load_model('my_hand_gesture')
+# print(model.summary())
+with open("svm.pickle", "rb") as file:
+    model = pickle.load(file)
 
 # Load class names
 f = open('my_gesture.names', 'r')
@@ -60,19 +65,32 @@ with mp_hands.Hands(min_detection_confidence=0.8, min_tracking_confidence=0.5) a
                                         mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),
                                          )
                 if estimate_pose:
-                    landmarks = []
-                    label_draw_info.append([hand.landmark[0].x * x, hand.landmark[0].y * y])
-                    for id, lm in enumerate(hand.landmark):
-                        # print(id, lm)
-                        lmx = int(lm.x * x)
-                        lmy = int(lm.y * y)
-                        landmarks.append([lmx, lmy])
-                    prediction = model.predict([landmarks])
-                    # print(prediction)
-                    classID = np.argmax(prediction)
-                    className = classNames[classID]
-                    # print(className)
-                    label_draw_info[len(label_draw_info) - 1].append(className)
+                    if predict_using == "SVM":
+                        landmarks = []
+                        label_draw_info.append([hand.landmark[0].x * x, hand.landmark[0].y * y])
+                        for id, lm in enumerate(hand.landmark):
+                            lmx = float(lm.x)
+                            lmy = float(lm.y)
+                            landmarks.append(lmx)
+                            landmarks.append(lmy)
+                        # print(landmarks)
+                        prediction = model.predict([landmarks])
+                        classID = prediction[0]
+                        className = classNames[classID]
+                        label_draw_info[len(label_draw_info) - 1].append(className)
+                    else:
+                        landmarks = []
+                        label_draw_info.append([hand.landmark[0].x * x, hand.landmark[0].y * y])
+                        for id, lm in enumerate(hand.landmark):
+                            # print(id, lm)
+                            lmx = int(lm.x * x)
+                            lmy = int(lm.y * y)
+                            landmarks.append([lmx, lmy])
+                        prediction = model.predict([landmarks])
+                        classID = np.argmax(prediction)
+                        className = classNames[classID]
+                        # print(className)
+                        label_draw_info[len(label_draw_info) - 1].append(className)
         
         if estimate_pose:
             for coordinates in label_draw_info:
