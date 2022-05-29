@@ -6,16 +6,23 @@ import pickle
 from tensorflow.keras.models import load_model, Sequential
 from tensorflow.keras.layers import Dense
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, f1_score
 
-source_model = load_model('mp_hand_gesture')
-model = Sequential()
-for layer in source_model.layers[:-1]: # go through until last layer
-    model.add(layer)
-model.add(Dense(5, activation='softmax'))
+def train_and_evaluate_nn(x_train, y_train, x_val, y_val, save_model=False, verbose=True):
+    source_model = load_model('mp_hand_gesture')
+    model = Sequential()
+    for layer in source_model.layers[:-1]: # go through until last layer
+        model.add(layer)
+    model.add(Dense(12, activation='softmax'))
 
-# print(model.summary())
-model.compile(optimizer='adam', loss='categorical_crossentropy')
+    # print(model.summary())
+    model.compile(optimizer='adam', loss='categorical_crossentropy')
+
+    model.fit(x_train, y_train, batch_size=32, validation_data = (x_val, y_val), epochs=200, verbose=verbose)
+    
+    if save_model:
+        model.save("./my_hand_gesture")
 
 def train_test_split(x, y, split=0.8):
     indices = np.array(range(len(x)))
@@ -43,36 +50,59 @@ def drop_columns(dataframe, columns):
             pass
     return dataframe
 
-df = pd.read_csv("./data/german_sign_language.csv")
+def load_and_preprocess_data():
+    df = pd.read_csv("./data/german_sign_language.csv")
 
-df = df[df["label"] < "g"]
-col_idx = 2
-while col_idx <= 62:
-    df = df.drop("coordinate {}".format(col_idx), axis=1)
-    col_idx += 3
-# print(df.to_string())
+    df = df[df["label"] < "n"]
+    col_idx = 2
+    while col_idx <= 62:
+        df = df.drop("coordinate {}".format(col_idx), axis=1)
+        col_idx += 3
+    # print(df.to_string())
 
-y_df = pd.get_dummies(df["label"])
-x_df = df.drop("label", axis=1)
-# print(x_df)
-# print(y_df)
+    y_df = pd.get_dummies(df["label"])
+    x_df = df.drop("label", axis=1)
+    # print(x_df)
+    # print(y_df)
 
-x_train, y_train, x_val, y_val = train_test_split(x_df.to_numpy(), y_df.to_numpy())
+    return x_df.to_numpy(), y_df.to_numpy()
 
-print(x_train)
-# model.fit(x_train, y_train, batch_size=32, validation_data = (x_val, y_val), epochs=200, verbose=1)
-# model.save("./my_hand_gesture")
+def get_train_and_test_data():
+    data_x, data_y = load_and_preprocess_data()
+    return train_test_split(data_x, data_y)
 
-print(y_train)
-y_1d = tf.argmax(y_train, axis=1).numpy()
-print(y_1d)
 
-clf = SVC(kernel="rbf")
-clf.fit(x_train, y_1d)
-predictions = clf.predict(x_val)
+def train_and_evaluate_svm(x_train, y_train, x_val, y_val, verbose=True, save_model=False):
+    y_1d = tf.argmax(y_train, axis=1).numpy()
 
-print(classification_report(tf.argmax(y_val, axis=1).numpy(), predictions))
-print(f1_score(tf.argmax(y_val, axis=1).numpy(), predictions, average="micro"))
+    clf = SVC(kernel="rbf", verbose=verbose)
+    clf.fit(x_train, y_1d)
+    predictions = clf.predict(x_val)
 
-with open("svm.pickle", "wb") as file:
-    pickle.dump(clf, file)
+    print(classification_report(tf.argmax(y_val, axis=1).numpy(), predictions))
+    print(f1_score(tf.argmax(y_val, axis=1).numpy(), predictions, average="micro"))
+
+    if save_model:
+        with open("svm.pickle", "wb") as file:
+            pickle.dump(clf, file)
+
+def train_and_evaluate_random_forest(x_train, y_train, x_val, y_val, verbose=True, save_model=False):
+    y_1d = tf.argmax(y_train, axis=1).numpy()
+
+    clf = RandomForestClassifier(n_estimators=500, max_depth=100, verbose=verbose, n_jobs=-1)
+    clf.fit(x_train, y_1d)
+    predictions = clf.predict(x_val)
+
+    print(classification_report(tf.argmax(y_val, axis=1).numpy(), predictions))
+    print(f1_score(tf.argmax(y_val, axis=1).numpy(), predictions, average="micro"))
+
+    if save_model:
+        with open("random_forest.pickle", "wb") as file:
+            pickle.dump(clf, file)
+
+
+if __name__ == "__main__":
+    x_train, y_train, x_val, y_val = get_train_and_test_data()
+    # train_and_evaluate_nn(x_train, y_train, x_val, y_val, save_model=True)
+    # train_and_evaluate_svm(x_train, y_train, x_val, y_val, save_model=True)
+    train_and_evaluate_random_forest(x_train, y_train, x_val, y_val, save_model=True, verbose=False)

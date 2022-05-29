@@ -2,112 +2,131 @@ from copyreg import pickle
 import mediapipe as mp
 import cv2
 import numpy as np
-import uuid
-import os
 import pickle
+from prometheus_client import Enum
 
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-predict_using = "SVM"
-
-cap = cv2.VideoCapture(0)
-
-mp_drawing = mp.solutions.drawing_utils
-mp_hands = mp.solutions.hands
+class ModelType(Enum):
+    SVM = "SVM"
+    NN = "NN"
+    RANDOM_FOREST = "RF"
 
 # Load the gesture recognizer model
-# model = load_model('my_hand_gesture')
-# print(model.summary())
-with open("svm.pickle", "rb") as file:
-    model = pickle.load(file)
+def load_nn_model():
+    model = load_model('my_hand_gesture')
+    print(model.summary())
+    return model
+
+def load_svm_model():
+    with open("svm.pickle", "rb") as file:
+        model = pickle.load(file)
+    return model
+
+def load_random_forest_model():
+    with open("random_forest.pickle", "rb") as file:
+        model = pickle.load(file)
+    return model
 
 # Load class names
-f = open('my_gesture.names', 'r')
-classNames = f.read().split('\n')
-f.close()
-print(classNames)
+def load_class_names():
+    f = open('my_gesture.names', 'r')
+    class_names = f.read().split('\n')
+    f.close()
+    print(class_names)
+    return class_names
 
-with mp_hands.Hands(min_detection_confidence=0.8, min_tracking_confidence=0.5) as hands: 
+def run_real_time_demo(cap, model_type, class_names):
+    mp_drawing = mp.solutions.drawing_utils
+    mp_hands = mp.solutions.hands
 
-    estimate_pose = False
+    if model_type == ModelType.SVM:
+        model = load_svm_model()
+    elif model_type == ModelType.NN:
+        model = load_nn_model()
+    elif model_type == ModelType.RANDOM_FOREST:
+        model = load_random_forest_model()
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        x, y, c = frame.shape
-        
-        # BGR 2 RGB
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Flip on horizontal
-        image = cv2.flip(image, 1)
-        
-        # Set flag
-        image.flags.writeable = False
-        
-        # Detections
-        results = hands.process(image)
-        
-        # Set flag to true
-        image.flags.writeable = True
-        
-        # RGB 2 BGR
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    with mp_hands.Hands(min_detection_confidence=0.8, min_tracking_confidence=0.5) as hands: 
 
-        className = ""
-        
-        # Rendering results
-        label_draw_info = []
-        if results.multi_hand_landmarks:
-            for num, hand in enumerate(results.multi_hand_landmarks):
-                mp_drawing.draw_landmarks(image, hand, mp_hands.HAND_CONNECTIONS, 
-                                        mp_drawing.DrawingSpec(color=(121, 22, 76), thickness=2, circle_radius=4),
-                                        mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),
-                                         )
-                if estimate_pose:
-                    if predict_using == "SVM":
-                        landmarks = []
-                        label_draw_info.append([hand.landmark[0].x * x, hand.landmark[0].y * y])
-                        for id, lm in enumerate(hand.landmark):
-                            lmx = float(lm.x)
-                            lmy = float(lm.y)
-                            landmarks.append(lmx)
-                            landmarks.append(lmy)
-                        # print(landmarks)
-                        prediction = model.predict([landmarks])
-                        classID = prediction[0]
-                        className = classNames[classID]
-                        label_draw_info[len(label_draw_info) - 1].append(className)
-                    else:
-                        landmarks = []
-                        label_draw_info.append([hand.landmark[0].x * x, hand.landmark[0].y * y])
-                        for id, lm in enumerate(hand.landmark):
-                            # print(id, lm)
-                            lmx = int(lm.x * x)
-                            lmy = int(lm.y * y)
-                            landmarks.append([lmx, lmy])
-                        prediction = model.predict([landmarks])
-                        classID = np.argmax(prediction)
-                        className = classNames[classID]
-                        # print(className)
-                        label_draw_info[len(label_draw_info) - 1].append(className)
-        
-        if estimate_pose:
-            for coordinates in label_draw_info:
-                cv2.putText(image, coordinates[2], (int(coordinates[0]), int(coordinates[1])), cv2.FONT_HERSHEY_SIMPLEX, 
-                    1, (0,0,255), 2, cv2.LINE_AA)
-        cv2.imshow('Hand Tracking', image)
+        estimate_pose = False
 
-        key = cv2.waitKey(1)
-        if key == 32: # SPACE
-            estimate_pose = not estimate_pose
-        # if results.multi_hand_landmarks is not None and key == 115:
-        #     for i in range(21):
-        #         print("X{}:".format(i), results.multi_hand_landmarks[0].landmark[i].x, "\nY{}:".format(i), results.multi_hand_landmarks[0].landmark[i].y, "\n")
+        while cap.isOpened():
+            ret, frame = cap.read()
+            x, y, c = frame.shape
+            
+            # BGR 2 RGB
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            # Flip on horizontal
+            image = cv2.flip(image, 1)
+            
+            # Set flag
+            image.flags.writeable = False
+            
+            # Detections
+            results = hands.process(image)
+            
+            # Set flag to true
+            image.flags.writeable = True
+            
+            # RGB 2 BGR
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        
-        if key == 27: # ESCAPE
-            break
+            className = ""
+            
+            # Rendering results
+            label_draw_info = []
+            if results.multi_hand_landmarks:
+                for num, hand in enumerate(results.multi_hand_landmarks):
+                    mp_drawing.draw_landmarks(image, hand, mp_hands.HAND_CONNECTIONS, 
+                                            mp_drawing.DrawingSpec(color=(121, 22, 76), thickness=2, circle_radius=4),
+                                            mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),
+                                            )
+                    if estimate_pose:
+                        if model_type != ModelType.NN:
+                            landmarks = []
+                            label_draw_info.append([hand.landmark[0].x * x, hand.landmark[0].y * y])
+                            for id, lm in enumerate(hand.landmark):
+                                lmx = float(lm.x)
+                                lmy = float(lm.y)
+                                landmarks.append(lmx)
+                                landmarks.append(lmy)
+                            # print(landmarks)
+                            prediction = model.predict([landmarks])
+                            classID = prediction[0]
+                            className = class_names[classID]
+                            label_draw_info[len(label_draw_info) - 1].append(className)
+                        else:
+                            landmarks = []
+                            label_draw_info.append([hand.landmark[0].x * x, hand.landmark[0].y * y])
+                            for id, lm in enumerate(hand.landmark):
+                                # print(id, lm)
+                                lmx = int(lm.x * x)
+                                lmy = int(lm.y * y)
+                                landmarks.append([lmx, lmy])
+                            prediction = model.predict([landmarks])
+                            classID = np.argmax(prediction)
+                            className = class_names[classID]
+                            # print(className)
+                            label_draw_info[len(label_draw_info) - 1].append(className)
+            
+            if estimate_pose:
+                for coordinates in label_draw_info:
+                    cv2.putText(image, coordinates[2], (int(coordinates[0]), int(coordinates[1])), cv2.FONT_HERSHEY_SIMPLEX, 
+                        1, (0,0,255), 2, cv2.LINE_AA)
+            cv2.imshow('Hand Tracking And Gesture Recognition', image)
 
-cap.release()
-cv2.destroyAllWindows()
+            key = cv2.waitKey(1)
+            if key == 32: # SPACE
+                estimate_pose = not estimate_pose
+            if key == 27: # ESCAPE
+                break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    cap = cv2.VideoCapture(0)
+    run_real_time_demo(cap, ModelType.SVM, load_class_names())
