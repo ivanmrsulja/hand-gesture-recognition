@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import pickle
 from prometheus_client import Enum
+import time
 
 import tensorflow as tf
 from tensorflow.keras.models import load_model
@@ -31,13 +32,13 @@ def load_random_forest_model():
 
 # Load class names
 def load_class_names():
-    f = open('my_gesture.names', 'r')
+    f = open('gesture.names', 'r')
     class_names = f.read().split('\n')
     f.close()
     print(class_names)
     return class_names
 
-def run_real_time_demo(cap, model_type, class_names):
+def run_real_time_demo(cap, model_type, class_names, count_fps=False):
     mp_drawing = mp.solutions.drawing_utils
     mp_hands = mp.solutions.hands
 
@@ -51,6 +52,9 @@ def run_real_time_demo(cap, model_type, class_names):
     with mp_hands.Hands(min_detection_confidence=0.8, min_tracking_confidence=0.5) as hands: 
 
         estimate_pose = False
+
+        previous_frame_time = 0        
+        current_frame_time = 0
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -112,9 +116,18 @@ def run_real_time_demo(cap, model_type, class_names):
                             # print(className)
                             label_draw_info[len(label_draw_info) - 1].append(className)
             
+            # FPS counter
+            if count_fps:
+                current_frame_time = time.time()
+                fps = 1/(current_frame_time - previous_frame_time)
+                previous_frame_time = current_frame_time
+                fps = int(fps)
+                fps = str(fps)
+                cv2.putText(image, fps, (7, 35), cv2.FONT_HERSHEY_SIMPLEX, 1, (100, 255, 0), 2, cv2.LINE_AA)
+
             if estimate_pose:
                 for coordinates in label_draw_info:
-                    cv2.putText(image, coordinates[2], (int(coordinates[0]), int(coordinates[1])), cv2.FONT_HERSHEY_SIMPLEX, 
+                    cv2.putText(image, coordinates[2], (int(coordinates[0]), int(coordinates[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 
                         1, (0,0,255), 2, cv2.LINE_AA)
             cv2.imshow('Hand Tracking And Gesture Recognition', image)
 
@@ -129,4 +142,4 @@ def run_real_time_demo(cap, model_type, class_names):
 
 if __name__ == "__main__":
     cap = cv2.VideoCapture(0)
-    run_real_time_demo(cap, ModelType.SVM, load_class_names())
+    run_real_time_demo(cap, ModelType.NN, load_class_names(), count_fps=True)
