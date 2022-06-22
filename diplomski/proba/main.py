@@ -142,4 +142,4 @@ def run_real_time_demo(cap, model_type, class_names, count_fps=False):
 
 if __name__ == "__main__":
     cap = cv2.VideoCapture(0)
-    run_real_time_demo(cap, ModelType.SVM, load_class_names(), count_fps=True)
+    run_real_time_demo(cap, ModelType.NN, load_class_names(), count_fps=True)
