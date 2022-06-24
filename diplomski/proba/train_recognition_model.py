@@ -24,23 +24,32 @@ def train_and_evaluate_nn(x_train, y_train, x_val, y_val, save_model=False, verb
     if save_model:
         model.save("./my_hand_gesture")
 
-def train_test_split(x, y, split=0.8):
+def train_test_split(x, y, train_split=0.8, validation_split=0.1, join_validation=False):
     indices = np.array(range(len(x)))
     
-    train_size = round(split * len(y))
+    train_size = round(train_split * len(y))
+    validation_size = round(validation_split * len(y))
 
     random.seed(12345)
     random.shuffle(indices)
 
+    validation_indice_bound = train_size + validation_size
     train_indices = indices[0:train_size]
-    test_indices = indices[train_size:len(x)]
+    validation_indices = indices[train_size:validation_indice_bound]
+    test_indices = indices[validation_indice_bound:len(x)]
 
     x_train = x[train_indices, :]
+    x_val = x[validation_indices, :]
     x_test = x[test_indices, :]
     y_train = y[train_indices, :]
+    y_val = y[validation_indices, :]
     y_test = y[test_indices, :]
+
+    if join_validation:
+        x_train = np.concatenate((x_train, x_val), axis=0)
+        y_train = np.concatenate((y_train, y_val), axis=0)
     
-    return x_train, y_train, x_test, y_test
+    return x_train, y_train, x_val, y_val, x_test, y_test
 
 def drop_columns(dataframe, columns):
     for column in columns:
@@ -67,9 +76,9 @@ def load_and_preprocess_data():
 
     return x_df.to_numpy(), y_df.to_numpy()
 
-def get_train_and_test_data():
+def get_train_and_test_data(join_validation):
     data_x, data_y = load_and_preprocess_data()
-    return train_test_split(data_x, data_y)
+    return train_test_split(data_x, data_y, join_validation=join_validation)
 
 
 def train_and_evaluate_svm(x_train, y_train, x_val, y_val, verbose=True, save_model=False):
@@ -89,7 +98,7 @@ def train_and_evaluate_svm(x_train, y_train, x_val, y_val, verbose=True, save_mo
 def train_and_evaluate_random_forest(x_train, y_train, x_val, y_val, verbose=True, save_model=False):
     y_1d = tf.argmax(y_train, axis=1).numpy()
 
-    clf = RandomForestClassifier(n_estimators=500, max_depth=100, verbose=verbose, n_jobs=-1)
+    clf = RandomForestClassifier(n_estimators=500, max_depth=100, verbose=verbose, n_jobs=-1, random_state=1234)
     clf.fit(x_train, y_1d)
     predictions = clf.predict(x_val)
 
@@ -102,7 +111,7 @@ def train_and_evaluate_random_forest(x_train, y_train, x_val, y_val, verbose=Tru
 
 
 if __name__ == "__main__":
-    x_train, y_train, x_val, y_val = get_train_and_test_data()
+    x_train, y_train, x_val, y_val, x_test, y_test = get_train_and_test_data(join_validation=False)
     # train_and_evaluate_nn(x_train, y_train, x_val, y_val, save_model=True)
-    # train_and_evaluate_svm(x_train, y_train, x_val, y_val, save_model=True)
-    train_and_evaluate_random_forest(x_train, y_train, x_val, y_val, save_model=True, verbose=False)
+    # train_and_evaluate_svm(x_train, y_train, x_test, y_test, save_model=True)
+    train_and_evaluate_random_forest(x_train, y_train, x_test, y_test, save_model=True, verbose=False)
