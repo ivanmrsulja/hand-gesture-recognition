@@ -9,6 +9,7 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, f1_score
 
+
 def train_and_evaluate_nn(x_train, y_train, x_val, y_val, save_model=False, verbose=True):
     source_model = load_model('mp_hand_gesture')
     model = Sequential()
@@ -23,6 +24,12 @@ def train_and_evaluate_nn(x_train, y_train, x_val, y_val, save_model=False, verb
     
     if save_model:
         model.save("./my_hand_gesture")
+
+    predictions = tf.argmax(model.predict(x_val), axis=1).numpy()
+
+    print(classification_report(tf.argmax(y_val, axis=1).numpy(), predictions))
+    print(f1_score(tf.argmax(y_val, axis=1).numpy(), predictions, average="micro"))
+
 
 def train_test_split(x, y, train_split=0.8, validation_split=0.1, join_validation=False):
     indices = np.array(range(len(x)))
@@ -51,6 +58,7 @@ def train_test_split(x, y, train_split=0.8, validation_split=0.1, join_validatio
     
     return x_train, y_train, x_val, y_val, x_test, y_test
 
+
 def drop_columns(dataframe, columns):
     for column in columns:
         try:
@@ -58,6 +66,7 @@ def drop_columns(dataframe, columns):
         except Exception as e:
             pass
     return dataframe
+
 
 def load_and_preprocess_data():
     df = pd.read_csv("./data/german_sign_language.csv")
@@ -75,6 +84,7 @@ def load_and_preprocess_data():
     # print(y_df)
 
     return x_df.to_numpy(), y_df.to_numpy()
+
 
 def get_train_and_test_data(join_validation):
     data_x, data_y = load_and_preprocess_data()
@@ -95,6 +105,7 @@ def train_and_evaluate_svm(x_train, y_train, x_val, y_val, verbose=True, save_mo
         with open("svm.pickle", "wb") as file:
             pickle.dump(clf, file)
 
+
 def train_and_evaluate_random_forest(x_train, y_train, x_val, y_val, verbose=True, save_model=False):
     y_1d = tf.argmax(y_train, axis=1).numpy()
 
@@ -111,7 +122,7 @@ def train_and_evaluate_random_forest(x_train, y_train, x_val, y_val, verbose=Tru
 
 
 if __name__ == "__main__":
-    x_train, y_train, x_val, y_val, x_test, y_test = get_train_and_test_data(join_validation=False)
-    # train_and_evaluate_nn(x_train, y_train, x_val, y_val, save_model=True)
-    # train_and_evaluate_svm(x_train, y_train, x_test, y_test, save_model=True)
-    train_and_evaluate_random_forest(x_train, y_train, x_test, y_test, save_model=True, verbose=False)
+    x_train, y_train, x_val, y_val, x_test, y_test = get_train_and_test_data(join_validation=True)
+    train_and_evaluate_nn(x_train, y_train, x_test, y_test, save_model=False)
+    # train_and_evaluate_svm(x_train, y_train, x_test, y_test, save_model=False)
+    # train_and_evaluate_random_forest(x_train, y_train, x_test, y_test, save_model=False, verbose=False)

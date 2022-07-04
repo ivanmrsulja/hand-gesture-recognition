@@ -9,10 +9,12 @@ import time
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
+
 class ModelType(Enum):
     SVM = "SVM"
     NN = "NN"
     RANDOM_FOREST = "RF"
+
 
 # Load the gesture recognizer model
 def load_nn_model():
@@ -20,15 +22,18 @@ def load_nn_model():
     print(model.summary())
     return model
 
+
 def load_svm_model():
     with open("svm.pickle", "rb") as file:
         model = pickle.load(file)
     return model
 
+
 def load_random_forest_model():
     with open("random_forest.pickle", "rb") as file:
         model = pickle.load(file)
     return model
+
 
 # Load class names
 def load_class_names():
@@ -37,6 +42,7 @@ def load_class_names():
     f.close()
     print(class_names)
     return class_names
+
 
 def run_real_time_demo(cap, model_type, class_names, count_fps=False):
     mp_drawing = mp.solutions.drawing_utils
@@ -107,8 +113,8 @@ def run_real_time_demo(cap, model_type, class_names, count_fps=False):
                             label_draw_info.append([hand.landmark[0].x * x, hand.landmark[0].y * y])
                             for id, lm in enumerate(hand.landmark):
                                 # print(id, lm)
-                                lmx = int(lm.x * x)
-                                lmy = int(lm.y * y)
+                                lmx = float(lm.x)
+                                lmy = float(lm.y)
                                 landmarks.append([lmx, lmy])
                             prediction = model.predict([landmarks])
                             classID = np.argmax(prediction)
@@ -140,6 +146,7 @@ def run_real_time_demo(cap, model_type, class_names, count_fps=False):
     cap.release()
     cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     cap = cv2.VideoCapture(0)
-    run_real_time_demo(cap, ModelType.SVM, load_class_names(), count_fps=True)
+    run_real_time_demo(cap, ModelType.NN, load_class_names(), count_fps=True)
