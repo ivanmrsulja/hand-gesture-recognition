@@ -103,7 +103,6 @@ def run_real_time_demo(cap, model_type, class_names, count_fps=False):
                                 lmy = float(lm.y)
                                 landmarks.append(lmx)
                                 landmarks.append(lmy)
-                            # print(landmarks)
                             prediction = model.predict([landmarks])
                             classID = prediction[0]
                             className = class_names[classID]
@@ -112,14 +111,12 @@ def run_real_time_demo(cap, model_type, class_names, count_fps=False):
                             landmarks = []
                             label_draw_info.append([hand.landmark[0].x * x, hand.landmark[0].y * y])
                             for id, lm in enumerate(hand.landmark):
-                                # print(id, lm)
                                 lmx = float(lm.x)
                                 lmy = float(lm.y)
                                 landmarks.append([lmx, lmy])
                             prediction = model.predict([landmarks])
                             classID = np.argmax(prediction)
                             className = class_names[classID]
-                            # print(className)
                             label_draw_info[len(label_draw_info) - 1].append(className)
             
             # FPS counter
@@ -149,4 +146,4 @@ def run_real_time_demo(cap, model_type, class_names, count_fps=False):
 
 if __name__ == "__main__":
     cap = cv2.VideoCapture(0)
-    run_real_time_demo(cap, ModelType.NN, load_class_names(), count_fps=True)
+    run_real_time_demo(cap, ModelType.RANDOM_FOREST, load_class_names(), count_fps=True)

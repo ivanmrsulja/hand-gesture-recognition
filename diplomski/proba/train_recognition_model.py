@@ -123,6 +123,6 @@ def train_and_evaluate_random_forest(x_train, y_train, x_val, y_val, verbose=Tru
 
 if __name__ == "__main__":
     x_train, y_train, x_val, y_val, x_test, y_test = get_train_and_test_data(join_validation=True)
-    train_and_evaluate_nn(x_train, y_train, x_test, y_test, save_model=False)
+    # train_and_evaluate_nn(x_train, y_train, x_test, y_test, save_model=False)
     # train_and_evaluate_svm(x_train, y_train, x_test, y_test, save_model=False)
-    # train_and_evaluate_random_forest(x_train, y_train, x_test, y_test, save_model=False, verbose=False)
+    train_and_evaluate_random_forest(x_train, y_train, x_test, y_test, save_model=False, verbose=False)
