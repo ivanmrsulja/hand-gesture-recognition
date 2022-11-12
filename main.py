@@ -18,7 +18,7 @@ class ModelType(Enum):
 
 # Load the gesture recognizer model
 def load_nn_model():
-    model = load_model('my_hand_gesture')
+    model = load_model("hand_gesture_model")
     print(model.summary())
     return model
 
@@ -132,7 +132,7 @@ def run_real_time_demo(cap, model_type, class_names, count_fps=False):
                 for coordinates in label_draw_info:
                     cv2.putText(image, coordinates[2], (int(coordinates[0]), int(coordinates[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 
                         1, (0,0,255), 2, cv2.LINE_AA)
-            cv2.imshow('Hand Tracking And Gesture Recognition', image)
+            cv2.imshow("Hand Tracking And Gesture Recognition", image)
 
             key = cv2.waitKey(1)
             if key == 32: # SPACE

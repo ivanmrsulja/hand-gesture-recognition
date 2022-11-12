@@ -11,19 +11,19 @@ from sklearn.metrics import classification_report, f1_score
 
 
 def train_and_evaluate_nn(x_train, y_train, x_val, y_val, save_model=False, verbose=True):
-    source_model = load_model('mp_hand_gesture')
+    source_model = load_model("mp_hand_gesture")
     model = Sequential()
     for layer in source_model.layers[:-1]: # go through until last layer
         model.add(layer)
-    model.add(Dense(12, activation='softmax'))
+    model.add(Dense(12, activation="softmax"))
 
     # print(model.summary())
-    model.compile(optimizer='adam', loss='categorical_crossentropy')
+    model.compile(optimizer="adam", loss="categorical_crossentropy")
 
     model.fit(x_train, y_train, batch_size=32, validation_data = (x_val, y_val), epochs=200, verbose=verbose)
     
     if save_model:
-        model.save("./my_hand_gesture")
+        model.save("./hand_gesture_model")
 
     predictions = tf.argmax(model.predict(x_val), axis=1).numpy()
 
@@ -123,6 +123,6 @@ def train_and_evaluate_random_forest(x_train, y_train, x_val, y_val, verbose=Tru
 
 if __name__ == "__main__":
     x_train, y_train, x_val, y_val, x_test, y_test = get_train_and_test_data(join_validation=True)
-    # train_and_evaluate_nn(x_train, y_train, x_test, y_test, save_model=False)
+    train_and_evaluate_nn(x_train, y_train, x_test, y_test, save_model=False)
     # train_and_evaluate_svm(x_train, y_train, x_test, y_test, save_model=False)
-    train_and_evaluate_random_forest(x_train, y_train, x_test, y_test, save_model=False, verbose=False)
+    # train_and_evaluate_random_forest(x_train, y_train, x_test, y_test, save_model=False, verbose=False)
